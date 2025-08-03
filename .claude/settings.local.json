@@ -3,7 +3,13 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(copy:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

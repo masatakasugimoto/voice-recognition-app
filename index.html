@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音声認識アプリ</title>
+    <title>🎤 音声認識アプリ V2.2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +28,6 @@
         
         
         <div class="engine-selection">
-            <h3>音声認識エンジン選択:</h3>
             <div class="engine-options">
                 <label class="engine-option">
                     <input type="radio" name="recognitionEngine" value="local" checked>
@@ -50,16 +52,52 @@
             </div>
         </div>
         
+        <div class="translation-selection">
+            <h3>翻訳設定:</h3>
+            <div class="translation-controls">
+                <label class="translation-toggle">
+                    <input type="checkbox" id="enableTranslation" checked>
+                    <span>🌍 自動翻訳を有効にする</span>
+                </label>
+                <label class="translation-toggle">
+                    <input type="checkbox" id="enableSpeech" checked>
+                    <span>🔊 翻訳結果を読み上げる</span>
+                </label>
+                <div class="language-selection">
+                    <label for="targetLanguage">翻訳先言語:</label>
+                    <select id="targetLanguage">
+                        <option value="en">🇺🇸 英語 (English)</option>
+                        <option value="zh">🇨🇳 中国語 (中文)</option>
+                        <option value="de">🇩🇪 ドイツ語 (Deutsch)</option>
+                        <option value="it">🇮🇹 イタリア語 (Italiano)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
         <div class="transcript-container">
-            <h3>認識結果:</h3>
-            <div id="transcript" class="transcript-area">
-                ここに音声認識の結果が表示されます
+            <div class="transcript-section">
+                <h3>🎤 音声認識結果 (日本語):</h3>
+                <div id="transcript" class="transcript-area">
+                    ここに音声認識の結果が表示されます
+                </div>
+            </div>
+            <div class="translation-section" id="translationSection" style="display: none;">
+                <h3 id="translationTitle">🌍 翻訳結果 (英語):</h3>
+                <div id="translatedText" class="transcript-area translation-area">
+                    翻訳結果がここに表示されます
+                </div>
             </div>
         </div>
         
         <div class="history">
             <h3>履歴:</h3>
-            <div id="historyList" class="history-list"></div>
+            <div class="history-tabs">
+                <button id="japaneseHistoryTab" class="history-tab active">🎤 日本語履歴</button>
+                <button id="translationHistoryTab" class="history-tab" style="display: none;">🌍 翻訳履歴</button>
+            </div>
+            <div id="japaneseHistoryList" class="history-list"></div>
+            <div id="translationHistoryList" class="history-list" style="display: none;"></div>
         </div>
         
         <div class="export-section">

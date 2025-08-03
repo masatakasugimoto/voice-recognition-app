@@ -40,6 +40,13 @@ const SPEECH_API_CONFIG = {
     }
 };
 
+const TRANSLATE_API_CONFIG = {
+    google: {
+        apiKey: process.env.GOOGLE_API_KEY,
+        url: 'https://translation.googleapis.com/language/translate/v2'
+    }
+};
+
 app.post('/api/speech-to-text', upload.single('audio'), async (req, res) => {
     try {
         if (!req.file) {
@@ -78,6 +85,81 @@ app.post('/api/speech-to-text', upload.single('audio'), async (req, res) => {
         });
     }
 });
+
+app.post('/api/translate', async (req, res) => {
+    try {
+        const { text, targetLanguage } = req.body;
+        
+        if (!text) {
+            return res.status(400).json({ error: '翻訳するテキストが見つかりません' });
+        }
+        
+        if (!targetLanguage) {
+            return res.status(400).json({ error: '翻訳先言語が指定されていません' });
+        }
+        
+        console.log(`翻訳開始 - テキスト: "${text}", 翻訳先: ${targetLanguage}`);
+        
+        let translatedText = '';
+        
+        if (TRANSLATE_API_CONFIG.google.apiKey) {
+            translatedText = await translateWithGoogle(text, targetLanguage);
+        } else {
+            throw new Error('翻訳APIの設定がありません。環境変数を確認してください。');
+        }
+        
+        console.log('翻訳結果:', translatedText);
+        
+        res.json({
+            originalText: text,
+            translatedText: translatedText,
+            targetLanguage: targetLanguage,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('翻訳エラー:', error);
+        res.status(500).json({
+            error: '翻訳に失敗しました',
+            details: error.message
+        });
+    }
+});
+
+async function translateWithGoogle(text, targetLanguage) {
+    try {
+        const response = await fetch(
+            `${TRANSLATE_API_CONFIG.google.url}?key=${TRANSLATE_API_CONFIG.google.apiKey}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    q: text,
+                    target: targetLanguage,
+                    source: 'ja',
+                    format: 'text'
+                })
+            }
+        );
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Google Translate API エラー: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.data && data.data.translations && data.data.translations.length > 0) {
+            return data.data.translations[0].translatedText;
+        } else {
+            throw new Error('翻訳結果が見つかりませんでした');
+        }
+    } catch (error) {
+        throw new Error(`Google Translate API エラー: ${error.message}`);
+    }
+}
 
 async function recognizeWithGoogle(audioBuffer, language) {
     try {
@@ -180,16 +262,53 @@ app.get('/api/config', (req, res) => {
     console.log('  Google API Key:', SPEECH_API_CONFIG.google.apiKey ? '設定済み' : '未設定');
     console.log('  Azure Subscription Key:', SPEECH_API_CONFIG.azure.subscriptionKey ? '設定済み' : '未設定');
     console.log('  AWS Access Key:', SPEECH_API_CONFIG.aws.accessKeyId ? '設定済み' : '未設定');
+    console.log('  Google Translate API Key:', TRANSLATE_API_CONFIG.google.apiKey ? '設定済み' : '未設定');
     
     const config = {
         hasGoogleAPI: !!SPEECH_API_CONFIG.google.apiKey,
         hasAzureAPI: !!SPEECH_API_CONFIG.azure.subscriptionKey,
         hasAWSAPI: !!SPEECH_API_CONFIG.aws.accessKeyId,
+        hasTranslateAPI: !!TRANSLATE_API_CONFIG.google.apiKey,
         supportedLanguages: ['ja-JP', 'en-US', 'zh-CN', 'ko-KR']
     };
     
     console.log('レスポンス:', config);
     res.json(config);
+});
+
+// 翻訳APIテスト用エンドポイント
+app.get('/api/translate/test', async (req, res) => {
+    try {
+        const testText = 'こんにちは';
+        const targetLang = 'en';
+        
+        console.log('翻訳APIテスト開始');
+        console.log('API Key:', TRANSLATE_API_CONFIG.google.apiKey ? '設定済み' : '未設定');
+        console.log('URL:', TRANSLATE_API_CONFIG.google.url);
+        
+        if (!TRANSLATE_API_CONFIG.google.apiKey) {
+            return res.status(500).json({ 
+                error: 'Google API Keyが設定されていません',
+                hasApiKey: false
+            });
+        }
+        
+        const result = await translateWithGoogle(testText, targetLang);
+        
+        res.json({
+            success: true,
+            originalText: testText,
+            translatedText: result,
+            targetLanguage: targetLang
+        });
+        
+    } catch (error) {
+        console.error('翻訳テストエラー:', error);
+        res.status(500).json({
+            error: error.message,
+            hasApiKey: !!TRANSLATE_API_CONFIG.google.apiKey
+        });
+    }
 });
 
 app.get('/health', (req, res) => {

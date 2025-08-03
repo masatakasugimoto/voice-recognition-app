@@ -10,13 +10,29 @@ class VoiceRecognitionApp {
         this.stopButton = document.getElementById('stopButton');
         this.statusText = document.getElementById('statusText');
         this.transcriptArea = document.getElementById('transcript');
-        this.historyList = document.getElementById('historyList');
+        this.japaneseHistoryList = document.getElementById('japaneseHistoryList');
+        this.translationHistoryList = document.getElementById('translationHistoryList');
+        this.japaneseHistoryTab = document.getElementById('japaneseHistoryTab');
+        this.translationHistoryTab = document.getElementById('translationHistoryTab');
         this.exportCurrentButton = document.getElementById('exportCurrentButton');
         this.exportHistoryButton = document.getElementById('exportHistoryButton');
         this.clearHistoryButton = document.getElementById('clearHistoryButton');
         
+        this.enableTranslationCheckbox = document.getElementById('enableTranslation');
+        this.enableSpeechCheckbox = document.getElementById('enableSpeech');
+        this.targetLanguageSelect = document.getElementById('targetLanguage');
+        this.translationSection = document.getElementById('translationSection');
+        this.translationTitle = document.getElementById('translationTitle');
+        this.translatedTextArea = document.getElementById('translatedText');
+        
         this.historyData = [];
+        this.translationHistoryData = [];
+        this.currentHistoryView = 'japanese';
         this.currentRecognitionType = 'none';
+        
+        // 音声合成の初期化
+        this.speechSynthesis = window.speechSynthesis;
+        this.speechUtterance = null;
         this.availableEngines = {
             local: false,
             google: false,
@@ -27,6 +43,7 @@ class VoiceRecognitionApp {
         
         this.setupEventListeners();
         this.checkBrowserSupport();
+        this.checkSpeechSynthesisSupport();
         this.initializeRecognitionType();
     }
     
@@ -40,6 +57,13 @@ class VoiceRecognitionApp {
         document.querySelectorAll('input[name="recognitionEngine"]').forEach(radio => {
             radio.addEventListener('change', (e) => this.handleEngineChange(e.target.value));
         });
+        
+        this.enableTranslationCheckbox.addEventListener('change', () => this.toggleTranslation());
+        this.enableSpeechCheckbox.addEventListener('change', () => this.toggleSpeech());
+        this.targetLanguageSelect.addEventListener('change', () => this.updateTranslationTitle());
+        
+        this.japaneseHistoryTab.addEventListener('click', () => this.switchHistoryView('japanese'));
+        this.translationHistoryTab.addEventListener('click', () => this.switchHistoryView('translation'));
     }
     
     async initializeRecognitionType() {
@@ -58,6 +82,64 @@ class VoiceRecognitionApp {
         }
         
         this.setupEngineOptions();
+        this.updateTranslationTitle();
+        this.toggleTranslation();
+    }
+    
+    toggleTranslation() {
+        const isEnabled = this.enableTranslationCheckbox.checked;
+        this.translationSection.style.display = isEnabled ? 'block' : 'none';
+        this.translationHistoryTab.style.display = isEnabled ? 'inline-block' : 'none';
+        
+        if (!isEnabled) {
+            // 翻訳がOFFになった時は表示エリアをクリア
+            this.clearTranslationDisplay();
+            if (this.currentHistoryView === 'translation') {
+                this.switchHistoryView('japanese');
+            }
+        }
+    }
+    
+    toggleSpeech() {
+        // 音声読み上げがOFFになった時は、現在の読み上げを停止
+        if (!this.enableSpeechCheckbox.checked && this.speechSynthesis) {
+            this.speechSynthesis.cancel();
+        }
+    }
+    
+    switchHistoryView(view) {
+        this.currentHistoryView = view;
+        
+        if (view === 'japanese') {
+            this.japaneseHistoryTab.classList.add('active');
+            this.translationHistoryTab.classList.remove('active');
+            this.japaneseHistoryList.style.display = 'block';
+            this.translationHistoryList.style.display = 'none';
+        } else {
+            this.japaneseHistoryTab.classList.remove('active');
+            this.translationHistoryTab.classList.add('active');
+            this.japaneseHistoryList.style.display = 'none';
+            this.translationHistoryList.style.display = 'block';
+        }
+    }
+    
+    updateTranslationTitle() {
+        const langMap = {
+            'en': '英語',
+            'zh': '中国語',
+            'de': 'ドイツ語',
+            'it': 'イタリア語'
+        };
+        const selectedLang = this.targetLanguageSelect.value;
+        const langName = langMap[selectedLang] || '英語';
+        this.translationTitle.textContent = `🌍 翻訳結果 (${langName}):`;
+        
+        // 言語が変更された時は表示エリアをクリア
+        this.clearTranslationDisplay();
+    }
+    
+    clearTranslationDisplay() {
+        this.translatedTextArea.innerHTML = '';
     }
     
     setupEngineOptions() {
@@ -95,6 +177,22 @@ class VoiceRecognitionApp {
             return false;
         }
         return true;
+    }
+    
+    checkSpeechSynthesisSupport() {
+        if (!window.speechSynthesis) {
+            // 音声合成がサポートされていない場合、チェックボックスを無効化
+            this.enableSpeechCheckbox.disabled = true;
+            this.enableSpeechCheckbox.checked = false;
+            const speechLabel = this.enableSpeechCheckbox.closest('label');
+            if (speechLabel) {
+                speechLabel.style.opacity = '0.5';
+                speechLabel.title = 'このブラウザは音声読み上げをサポートしていません';
+            }
+            console.log('音声合成はサポートされていません');
+        } else {
+            console.log('音声合成がサポートされています');
+        }
     }
     
     async startRecording() {
@@ -156,6 +254,10 @@ class VoiceRecognitionApp {
             if (finalTranscript) {
                 this.currentTranscript += finalTranscript;
                 this.addToHistory(finalTranscript);
+                
+                if (this.enableTranslationCheckbox.checked && finalTranscript.trim()) {
+                    this.translateText(finalTranscript);
+                }
                 
                 if (this.selectedEngine === 'google' && finalTranscript.trim()) {
                     this.sendFinalTranscriptToGoogle(finalTranscript);
@@ -313,8 +415,117 @@ class VoiceRecognitionApp {
             return;
         }
         
+        this.currentTranscript = text;
         this.transcriptArea.textContent = text;
         this.updateStatus('音声認識完了', 'success');
+        
+        if (this.enableTranslationCheckbox.checked) {
+            this.translateText(text);
+        }
+        
+        this.addToHistory(text);
+    }
+    
+    async translateText(text) {
+        if (!text || text.trim() === '') {
+            return;
+        }
+        
+        try {
+            // 翻訳中インジケーターを一時的に表示
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'translation-loading';
+            loadingIndicator.textContent = '翻訳中...';
+            this.translatedTextArea.appendChild(loadingIndicator);
+            
+            const response = await fetch('/api/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    targetLanguage: this.targetLanguageSelect.value
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`翻訳API エラー: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // ローディングインジケーターを削除
+            this.translatedTextArea.removeChild(loadingIndicator);
+            
+            // 翻訳結果を表示エリアに追加
+            this.addTranslationToDisplay(text, result.translatedText, this.targetLanguageSelect.value);
+            
+            // 翻訳結果を履歴に追加
+            this.addToTranslationHistory(text, result.translatedText, this.targetLanguageSelect.value);
+            
+        } catch (error) {
+            console.error('翻訳エラー:', error);
+            
+            // エラー時はローディングインジケーターを削除してエラーメッセージを表示
+            const loadingElements = this.translatedTextArea.querySelectorAll('.translation-loading');
+            loadingElements.forEach(el => el.remove());
+            
+            const errorElement = document.createElement('div');
+            errorElement.className = 'translation-error';
+            errorElement.textContent = '翻訳に失敗しました';
+            this.translatedTextArea.appendChild(errorElement);
+        }
+    }
+    
+    addTranslationToDisplay(originalText, translatedText, targetLanguage) {
+        // 既存のテキストに翻訳結果を追加（音声認識結果と同じ形式）
+        const currentText = this.translatedTextArea.textContent;
+        const newText = currentText + (currentText ? ' ' : '') + translatedText;
+        this.translatedTextArea.textContent = newText;
+        
+        // 音声読み上げが有効な場合、翻訳結果を読み上げる
+        if (this.enableSpeechCheckbox.checked) {
+            this.speakTranslation(translatedText, targetLanguage);
+        }
+    }
+    
+    speakTranslation(text, targetLanguage) {
+        if (!this.speechSynthesis || !text || text.trim() === '') {
+            return;
+        }
+        
+        try {
+            // 現在の読み上げを停止
+            this.speechSynthesis.cancel();
+            
+            // 新しい読み上げを作成
+            this.speechUtterance = new SpeechSynthesisUtterance(text);
+            
+            // 言語設定のマッピング
+            const languageMap = {
+                'en': 'en-US',
+                'zh': 'zh-CN', 
+                'de': 'de-DE',
+                'it': 'it-IT'
+            };
+            
+            this.speechUtterance.lang = languageMap[targetLanguage] || 'en-US';
+            this.speechUtterance.rate = 0.9; // 少し遅めの速度
+            this.speechUtterance.pitch = 1.0; // 標準のピッチ
+            this.speechUtterance.volume = 0.8; // 少し控えめの音量
+            
+            // エラーハンドリング
+            this.speechUtterance.onerror = (event) => {
+                console.error('音声読み上げエラー:', event.error);
+            };
+            
+            // 読み上げ開始
+            this.speechSynthesis.speak(this.speechUtterance);
+            
+        } catch (error) {
+            console.error('音声読み上げ機能エラー:', error);
+        }
     }
     
     addToHistory(text) {
@@ -341,10 +552,55 @@ class VoiceRecognitionApp {
             <div>${text}</div>
         `;
         
-        this.historyList.insertBefore(historyItem, this.historyList.firstChild);
+        this.japaneseHistoryList.insertBefore(historyItem, this.japaneseHistoryList.firstChild);
         
-        if (this.historyList.children.length > 10) {
-            this.historyList.removeChild(this.historyList.lastChild);
+        if (this.japaneseHistoryList.children.length > 10) {
+            this.japaneseHistoryList.removeChild(this.japaneseHistoryList.lastChild);
+        }
+        
+        this.updateExportButtons();
+    }
+    
+    addToTranslationHistory(originalText, translatedText, targetLanguage) {
+        const timestamp = new Date();
+        const timestampStr = timestamp.toLocaleString('ja-JP');
+        
+        const langMap = {
+            'en': '英語',
+            'zh': '中国語',
+            'de': 'ドイツ語',
+            'it': 'イタリア語'
+        };
+        const langName = langMap[targetLanguage] || '英語';
+        
+        const translationData = {
+            originalText: originalText.trim(),
+            translatedText: translatedText.trim(),
+            targetLanguage: targetLanguage,
+            targetLanguageName: langName,
+            timestamp: timestamp.toISOString(),
+            timestampDisplay: timestampStr
+        };
+        
+        this.translationHistoryData.unshift(translationData);
+        
+        if (this.translationHistoryData.length > 50) {
+            this.translationHistoryData.pop();
+        }
+        
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item translation-history-item';
+        
+        historyItem.innerHTML = `
+            <div class="history-timestamp">${timestampStr} (${langName})</div>
+            <div class="original-text">🎤 ${originalText}</div>
+            <div class="translated-text">🌍 ${translatedText}</div>
+        `;
+        
+        this.translationHistoryList.insertBefore(historyItem, this.translationHistoryList.firstChild);
+        
+        if (this.translationHistoryList.children.length > 10) {
+            this.translationHistoryList.removeChild(this.translationHistoryList.lastChild);
         }
         
         this.updateExportButtons();
@@ -363,11 +619,13 @@ class VoiceRecognitionApp {
     
     updateExportButtons() {
         const hasCurrentText = this.currentTranscript && this.currentTranscript.trim() !== '';
-        const hasHistory = this.historyData.length > 0;
+        const hasJapaneseHistory = this.historyData.length > 0;
+        const hasTranslationHistory = this.translationHistoryData.length > 0;
+        const hasAnyHistory = hasJapaneseHistory || hasTranslationHistory;
         
         this.exportCurrentButton.disabled = !hasCurrentText;
-        this.exportHistoryButton.disabled = !hasHistory;
-        this.clearHistoryButton.disabled = !hasHistory;
+        this.exportHistoryButton.disabled = !hasAnyHistory;
+        this.clearHistoryButton.disabled = !hasAnyHistory;
     }
     
     
@@ -388,7 +646,10 @@ class VoiceRecognitionApp {
     }
     
     exportHistory() {
-        if (this.historyData.length === 0) {
+        const hasJapaneseHistory = this.historyData.length > 0;
+        const hasTranslationHistory = this.translationHistoryData.length > 0;
+        
+        if (!hasJapaneseHistory && !hasTranslationHistory) {
             alert('エクスポートする履歴がありません');
             return;
         }
@@ -396,27 +657,46 @@ class VoiceRecognitionApp {
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         const filename = `speech-recognition-history-${timestamp}.txt`;
         
-        let content = `音声認識履歴\n`;
+        let content = `音声認識・翻訳履歴\n`;
         content += `エクスポート日時: ${new Date().toLocaleString('ja-JP')}\n`;
-        content += `総件数: ${this.historyData.length}件\n\n`;
+        content += `日本語履歴: ${this.historyData.length}件\n`;
+        content += `翻訳履歴: ${this.translationHistoryData.length}件\n\n`;
         content += '==========================================\n\n';
         
-        this.historyData.forEach((item, index) => {
-            content += `${index + 1}. ${item.timestampDisplay}\n`;
-            content += `${item.text}\n\n`;
-        });
+        if (hasJapaneseHistory) {
+            content += '【日本語音声認識履歴】\n\n';
+            this.historyData.forEach((item, index) => {
+                content += `${index + 1}. ${item.timestampDisplay}\n`;
+                content += `${item.text}\n\n`;
+            });
+            content += '\n';
+        }
+        
+        if (hasTranslationHistory) {
+            content += '【翻訳履歴】\n\n';
+            this.translationHistoryData.forEach((item, index) => {
+                content += `${index + 1}. ${item.timestampDisplay} (${item.targetLanguageName})\n`;
+                content += `🎤 日本語: ${item.originalText}\n`;
+                content += `🌍 翻訳: ${item.translatedText}\n\n`;
+            });
+        }
         
         this.downloadFile(content, filename, 'text/plain');
     }
     
     clearHistory() {
-        if (this.historyData.length === 0) {
+        const hasJapaneseHistory = this.historyData.length > 0;
+        const hasTranslationHistory = this.translationHistoryData.length > 0;
+        
+        if (!hasJapaneseHistory && !hasTranslationHistory) {
             return;
         }
         
         if (confirm('履歴をすべて削除してもよろしいですか？')) {
             this.historyData = [];
-            this.historyList.innerHTML = '';
+            this.translationHistoryData = [];
+            this.japaneseHistoryList.innerHTML = '';
+            this.translationHistoryList.innerHTML = '';
             this.updateExportButtons();
             this.updateStatus('履歴をクリアしました', 'success');
         }
