@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声認識アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>音声認識アプリ</h1>
+        
+        <div class="controls">
+            <button id="startButton" class="mic-button">
+                🎤 録音開始
+            </button>
+            <button id="stopButton" class="mic-button" disabled>
+                ⏹️ 録音停止
+            </button>
+        </div>
+        
+        <div class="status">
+            <p id="statusText">録音を開始してください</p>
+        </div>
+        
+        
+        <div class="engine-selection">
+            <h3>音声認識エンジン選択:</h3>
+            <div class="engine-options">
+                <label class="engine-option">
+                    <input type="radio" name="recognitionEngine" value="local" checked>
+                    <span class="option-content">
+                        <span class="option-icon">💻</span>
+                        <span class="option-text">
+                            <strong>ローカル音声認識</strong>
+                            <small>ブラウザの音声認識（リアルタイム）</small>
+                        </span>
+                    </span>
+                </label>
+                <label class="engine-option" id="googleEngineOption" style="display: none;">
+                    <input type="radio" name="recognitionEngine" value="google">
+                    <span class="option-content">
+                        <span class="option-icon">🌐</span>
+                        <span class="option-text">
+                            <strong>Google音声認識</strong>
+                            <small>クラウドAPI（リアルタイム）</small>
+                        </span>
+                    </span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="transcript-container">
+            <h3>認識結果:</h3>
+            <div id="transcript" class="transcript-area">
+                ここに音声認識の結果が表示されます
+            </div>
+        </div>
+        
+        <div class="history">
+            <h3>履歴:</h3>
+            <div id="historyList" class="history-list"></div>
+        </div>
+        
+        <div class="export-section">
+            <h3>エクスポート:</h3>
+            <div class="export-controls">
+                <div class="export-buttons">
+                    <button id="exportCurrentButton" class="export-button" disabled>
+                        💾 現在の認識結果をエクスポート
+                    </button>
+                    <button id="exportHistoryButton" class="export-button" disabled>
+                        📥 履歴をすべてエクスポート
+                    </button>
+                    <button id="clearHistoryButton" class="clear-button" disabled>
+                        🗑️ 履歴をクリア
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
