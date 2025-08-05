@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 アプリケーションポータル</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main-menu.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚀 アプリケーションポータル</h1>
+            <p class="subtitle">開発中のアプリケーション一覧</p>
+        </header>
+        
+        <main class="app-grid">
+            <div class="app-card featured" onclick="openApp('voice-recognition')">
+                <div class="app-icon">🎤</div>
+                <div class="app-info">
+                    <h3>音声認識アプリ</h3>
+                    <p class="app-description">音声をリアルタイムで認識し、4言語に翻訳・読み上げ</p>
+                    <div class="app-features">
+                        <span class="feature-tag">🌍 翻訳</span>
+                        <span class="feature-tag">🔊 読み上げ</span>
+                        <span class="feature-tag">📱 レスポンシブ</span>
+                    </div>
+                    <div class="app-version">V2.2</div>
+                </div>
+                <div class="app-status active">✓ 稼働中</div>
+            </div>
+            
+            <div class="app-card coming-soon">
+                <div class="app-icon">📝</div>
+                <div class="app-info">
+                    <h3>メモ・ノートアプリ</h3>
+                    <p class="app-description">マークダウン対応のメモ・ノート管理システム</p>
+                    <div class="app-features">
+                        <span class="feature-tag">📋 Markdown</span>
+                        <span class="feature-tag">🔍 検索</span>
+                        <span class="feature-tag">☁️ 同期</span>
+                    </div>
+                    <div class="app-version">開発予定</div>
+                </div>
+                <div class="app-status coming">🚧 開発予定</div>
+            </div>
+            
+            <div class="app-card coming-soon">
+                <div class="app-icon">📊</div>
+                <div class="app-info">
+                    <h3>データ分析ツール</h3>
+                    <p class="app-description">CSVデータの可視化・分析ダッシュボード</p>
+                    <div class="app-features">
+                        <span class="feature-tag">📈 グラフ</span>
+                        <span class="feature-tag">📋 CSV</span>
+                        <span class="feature-tag">🎯 分析</span>
+                    </div>
+                    <div class="app-version">開発予定</div>
+                </div>
+                <div class="app-status coming">🚧 開発予定</div>
+            </div>
+            
+            <div class="app-card coming-soon">
+                <div class="app-icon">🌤️</div>
+                <div class="app-info">
+                    <h3>天気予報アプリ</h3>
+                    <p class="app-description">気象API連携の詳細天気予報・アラート機能</p>
+                    <div class="app-features">
+                        <span class="feature-tag">🌡️ 詳細予報</span>
+                        <span class="feature-tag">🚨 アラート</span>
+                        <span class="feature-tag">📍 位置情報</span>
+                    </div>
+                    <div class="app-version">開発予定</div>
+                </div>
+                <div class="app-status coming">🚧 開発予定</div>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number">1</span>
+                    <span class="stat-label">稼働中</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">3</span>
+                    <span class="stat-label">開発予定</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">V2.2</span>
+                    <span class="stat-label">最新版</span>
+                </div>
+            </div>
+            <p class="copyright">© 2025 Application Portal - Powered by Claude Code</p>
+        </footer>
+    </div>
+    
+    <script src="main-menu.js"></script>
+</body>
+</html>

@@ -45,6 +45,7 @@ class VoiceRecognitionApp {
         this.checkBrowserSupport();
         this.checkSpeechSynthesisSupport();
         this.initializeRecognitionType();
+        this.setupNavigationListeners();
     }
     
     setupEventListeners() {
@@ -736,6 +737,15 @@ class VoiceRecognitionApp {
             
         } catch (error) {
             console.error('Google API送信エラー:', error);
+        }
+    }
+    
+    setupNavigationListeners() {
+        const backButton = document.getElementById('backToMenuButton');
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                window.location.href = 'main-menu.html';
+            });
         }
     }
 }

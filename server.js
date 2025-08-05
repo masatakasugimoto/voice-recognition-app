@@ -1,4 +1,6 @@
 const express = require('express');
+const https = require('https');
+const http = require('http');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -7,7 +9,7 @@ const fetch = require('node-fetch');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
 
 app.set('trust proxy', 1);
 
@@ -327,17 +329,38 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🎤 音声認識サーバーが起動しました`);
-    console.log(`📡 サーバーURL: http://localhost:${PORT}`);
-    console.log(`🌐 環境: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔧 設定状況:`);
-    console.log(`   - Google Speech API: ${SPEECH_API_CONFIG.google.apiKey ? '✓ 設定済み' : '✗ 未設定'}`);
-    console.log(`   - Azure Speech API: ${SPEECH_API_CONFIG.azure.subscriptionKey ? '✓ 設定済み' : '✗ 未設定'}`);
-    console.log(`   - AWS Transcribe: ${SPEECH_API_CONFIG.aws.accessKeyId ? '✓ 設定済み' : '✗ 未設定'}`);
-    
-    if (!SPEECH_API_CONFIG.google.apiKey && !SPEECH_API_CONFIG.azure.subscriptionKey && !SPEECH_API_CONFIG.aws.accessKeyId) {
-        console.log(`⚠️  警告: クラウド音声認識APIが設定されていません`);
-        console.log(`   ブラウザの音声認識機能のみが利用可能です`);
-    }
+// SSL証明書の設定
+let sslOptions;
+try {
+    sslOptions = {
+        key: fs.readFileSync(path.join(__dirname, 'key.pem')),
+        cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
+    };
+} catch (error) {
+    console.log('⚠️  SSL証明書が見つかりません。HTTPサーバーのみ起動します。');
+}
+
+// HTTPサーバー (ポート80)
+http.createServer(app).listen(80, '0.0.0.0', () => {
+    console.log(`🎤 HTTPサーバーが起動しました`);
+    console.log(`📡 HTTP URL: http://localhost/`);
 });
+
+// HTTPSサーバー (ポート443) - SSL証明書がある場合のみ
+if (sslOptions) {
+    https.createServer(sslOptions, app).listen(443, '0.0.0.0', () => {
+        console.log(`🔒 HTTPSサーバーが起動しました`);
+        console.log(`📡 HTTPS URL: https://localhost/`);
+    });
+}
+
+console.log(`🌐 環境: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔧 設定状況:`);
+console.log(`   - Google Speech API: ${SPEECH_API_CONFIG.google.apiKey ? '✓ 設定済み' : '✗ 未設定'}`);
+console.log(`   - Azure Speech API: ${SPEECH_API_CONFIG.azure.subscriptionKey ? '✓ 設定済み' : '✗ 未設定'}`);
+console.log(`   - AWS Transcribe: ${SPEECH_API_CONFIG.aws.accessKeyId ? '✓ 設定済み' : '✗ 未設定'}`);
+
+if (!SPEECH_API_CONFIG.google.apiKey && !SPEECH_API_CONFIG.azure.subscriptionKey && !SPEECH_API_CONFIG.aws.accessKeyId) {
+    console.log(`⚠️  警告: クラウド音声認識APIが設定されていません`);
+    console.log(`   ブラウザの音声認識機能のみが利用可能です`);
+}
